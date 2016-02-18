@@ -68,13 +68,13 @@ MONTHS = {"Jan" => "01",
 def main options
   ARGV.each do |f|
     if f.end_with? "gz"
-      head = "zcat \"#{f}\" | head -n1 | "
-      tail = "zcat \"#{f}\" | tail -n1 | "
+      head = "zcat \"#{f}\" | head --lines 1 | "
+      tail = "zcat \"#{f}\" | tail --lines 1 | "
     else
-      head = "head -n1 \"#{f}\" | "
-      tail = "tail -n1 \"#{f}\" | "
+      head = "head --lines 1 \"#{f}\" | "
+      tail = "tail --lines 1 \"#{f}\" | "
     end
-    sed = "grep -o '\\[[^:]*' | head -n1 | sed -e 's/\\[//' -e 's/\\//_/g'"
+    sed = "grep -o '\\[[^:]*' | head --lines 1 | sed --expression 's/\\[//' --expression 's/\\//_/g'"
 
     # Find Dates
     first_date = `#{head} #{sed}`
