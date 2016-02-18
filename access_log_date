@@ -1,0 +1,103 @@
+#!/usr/bin/env ruby
+
+# List dates of default apache web server access logs.
+# Moves files accordingly
+# Released under the GPLv3, Copyright 2016 Felix Wolfsteller
+
+# WARNING this script would never survive a security audit.
+#         use only if you understand what it is doing ...
+
+# Example:
+#   $ access_log_date *
+#     file.1
+#       first date: 2014_Jan_1
+#       last  date: 2014_Jan_20
+#     file.2
+#       first date: 2014_Jan_21
+#       last  date: 2014_Jan_28
+#
+#   $ access_log_date -m *
+#     file.1
+#       first date: 2014_Jan_1
+#       last  date: 2014_Jan_20
+#     mv file.1 file-2014_01_01-2014-01-20
+#     file.2
+#       first date: 2014_Jan_21
+#       last  date: 2014_Jan_28
+#     mv file.2 file-2014_01_21-2014-01-28
+#
+# Useful if your logrotate does not dateext.
+
+require 'optparse'
+require 'pathname'
+
+options = {}
+
+optparse = OptionParser.new do |opts|
+  opts.banner = "Usage: #{$PROGRAM_NAME} FILES"
+  opts.separator ""
+  opts.separator "List date of first and last entry in apache default log files"
+  opts.separator ""
+
+  opts.on('-m', '--move', 'move files') do |o|
+    options[:move] = o
+  end
+  opts.on('-v', '--verbose', 'Run verbosely') do |o|
+    options[:verbose] = o
+  end
+  opts.on('-h', '--help', 'Show this help and exit.') do
+    puts opts
+    exit 0
+  end
+end.parse!
+
+MONTHS = {"Jan" => "01",
+          "Feb" => "02",
+          "Mar" => "03",
+          "Apr" => "04",
+          "May" => "05",
+          "Jun" => "06",
+          "Jul" => "07",
+          "Aug" => "08",
+          "Sep" => "09",
+          "Oct" => "10",
+          "Nov" => "11",
+          "Dec" => "12"}
+
+
+def main options
+  ARGV.each do |f|
+    if f.end_with? "gz"
+      head = "zcat \"#{f}\" | head -n1 | "
+      tail = "zcat \"#{f}\" | tail -n1 | "
+    else
+      head = "head -n1 \"#{f}\" | "
+      tail = "tail -n1 \"#{f}\" | "
+    end
+    sed = "grep -o '\\[[^:]*' | head -n1 | sed -e 's/\\[//' -e 's/\\//_/g'"
+
+    # Find Dates
+    first_date = `#{head} #{sed}`
+    last_date  = `#{tail} #{sed}`
+
+    # List Dates
+    puts "#{f}"
+    puts "  first date: #{first_date}"
+    puts "  last  date: #{last_date}"
+
+    if options[:move]
+      /(?<fromd>[0-9]*)_(?<fromm>[A-Za-z]*)_(?<fromy>[0-9]*)/ =~ first_date
+      /(?<tod>[0-9]*)_(?<tom>[A-Za-z]*)_(?<toy>[0-9]*)(?<rest>.*)/ =~ last_date
+
+      target_f = File.basename(f).gsub(/[0-9_-]+/, "_#{fromy}_#{MONTHS[fromm]}_#{fromd}-#{toy}_#{MONTHS[tom]}_#{tod}")
+      move = "mv -m \"#{f}\" \"#{Pathname.new(File.dirname f).join(target_f)}\""
+      if options[:verbose]
+        puts move
+      end
+      `#{move}`
+    end
+  end
+end
+
+main options
+exit 0
