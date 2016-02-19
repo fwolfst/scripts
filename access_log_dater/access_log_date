@@ -6,6 +6,8 @@
 
 # WARNING this script would never survive a security audit.
 #         use only if you understand what it is doing ...
+# Self-contained script, some hook and eyes inserted to be able
+# to use rspec on it.
 
 # Example:
 #   $ access_log_date *
@@ -28,28 +30,7 @@
 #
 # Useful if your logrotate does not dateext.
 
-require 'optparse'
 require 'pathname'
-
-options = {}
-
-optparse = OptionParser.new do |opts|
-  opts.banner = "Usage: #{$PROGRAM_NAME} FILES"
-  opts.separator ""
-  opts.separator "List date of first and last entry in apache default log files"
-  opts.separator ""
-
-  opts.on('-m', '--move', 'move files') do |o|
-    options[:move] = o
-  end
-  opts.on('-v', '--verbose', 'Run verbosely') do |o|
-    options[:verbose] = o
-  end
-  opts.on('-h', '--help', 'Show this help and exit.') do
-    puts opts
-    exit 0
-  end
-end.parse!
 
 MONTHS = {"Jan" => "01",
           "Feb" => "02",
@@ -64,8 +45,55 @@ MONTHS = {"Jan" => "01",
           "Nov" => "11",
           "Dec" => "12"}
 
+# Build speaking filename. See spec.
+def target_file orig, part
+  path     = Pathname.new(File.dirname orig)
+  basename = File.basename(orig)
+  target   = basename
 
-def main options
+  # First, replace any numbers
+  scan = target.scan(/[0-9_\-]+/).last
+  if scan
+    target.gsub!(scan, part)
+  else
+    if (ext = File.extname(basename)).empty?
+      # Append; orig is something like "appache-log"
+      target += ".#{part}"
+    else
+      # Inject before extension
+      target = "#{File.basename(basename, ext)}.#{part}#{ext}"
+    end
+  end
+
+  path.join(target).to_s
+end
+
+
+def main
+  require 'optparse'
+  options = {}
+
+  optparse = OptionParser.new do |opts|
+    opts.banner = "Usage: #{$PROGRAM_NAME} FILES"
+    opts.separator ""
+    opts.separator "List date of first and last entry in apache default log files"
+    opts.separator ""
+
+    opts.on('-m', '--move', 'move files') do |o|
+      options[:move] = o
+    end
+    opts.on('-v', '--verbose', 'Run verbosely') do |o|
+      options[:verbose] = o
+    end
+    opts.on('-d', '--dry-run', 'In combination with -m/--move, do not move file, just print command') do |o|
+      options[:dryrun] = o
+    end
+    opts.on('-h', '--help', 'Show this help and exit.') do
+      puts opts
+      exit 0
+    end
+  end.parse!
+
   ARGV.each do |f|
     if f.end_with? "gz"
       head = "zcat \"#{f}\" | head --lines 1 | "
@@ -89,15 +117,21 @@ def main options
       /(?<fromd>[0-9]*)_(?<fromm>[A-Za-z]*)_(?<fromy>[0-9]*)/ =~ first_date
       /(?<tod>[0-9]*)_(?<tom>[A-Za-z]*)_(?<toy>[0-9]*)(?<rest>.*)/ =~ last_date
 
-      target_f = File.basename(f).gsub(/[0-9_-]+/, "_#{fromy}_#{MONTHS[fromm]}_#{fromd}-#{toy}_#{MONTHS[tom]}_#{tod}")
-      move = "mv -m \"#{f}\" \"#{Pathname.new(File.dirname f).join(target_f)}\""
-      if options[:verbose]
+      datestamp = "_#{fromy}_#{MONTHS[fromm]}_#{fromd}-#{toy}_#{MONTHS[tom]}_#{tod}"
+      target_f = target_file(f, datestamp)
+
+      move = "mv --no-clobber \"#{f}\" \"#{target_f}\""
+      if options[:verbose] || options[:dryrun]
         puts move
       end
-      `#{move}`
+      if !options[:dryrun]
+        `#{move}`
+      end
     end
   end
 end
 
-main options
-exit 0
+if __FILE__ == $PROGRAM_NAME
+  main
+  exit 0
+end
