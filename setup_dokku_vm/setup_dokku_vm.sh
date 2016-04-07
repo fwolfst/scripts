@@ -35,7 +35,7 @@ sudo vmbuilder\
   --ssh-user-key="$USERHOME"/.ssh/id_rsa.pub\
   --lock-user\
   --timezone Europe/Berlin\
-  --libvirt qemu://system\
+  --libvirt qemu:///system\
   --verbose\
   --execscript `pwd`/post_setup
 
