@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Prepare a bare ubuntu VM for simple dokku installation, not unscary
+# Felix Wolfsteller, 2015, 2016 GPL3+
+
+# called from vmbuilder, first argument is path to chroot us.
+
+echo "Enable passwordless sudo for admins"
+echo '# Allow members of group admin to not need a password' >> $1/etc/sudoers
+echo '%admin ALL=NOPASSWD: ALL' >> $1/etc/sudoers
+
+echo "Enable (passwordless) sudo for dokku"
+echo '# Allow members of group dokku to not need a password' >> $1/etc/sudoers
+echo '%dokku ALL=(ALL:ALL) ALL' >> $1/etc/sudoers
+echo '%dokku ALL=NOPASSWD: ALL' >> $1/etc/sudoers
+
+#wget https://raw.githubusercontent.com/dokku/dokku/v0.5.4/bootstrap.sh
+#sudo DOKKU_TAG=v0.5.4 bash bootstrap.sh
