@@ -114,6 +114,10 @@ def main
     puts "  last  date: #{last_date}"
 
     if options[:move]
+      if first_date.empty? || last_date.empty?
+        STDERR.puts "date(s) empty, not moving #{f}"
+        next
+      end
       /(?<fromd>[0-9]*)_(?<fromm>[A-Za-z]*)_(?<fromy>[0-9]*)/ =~ first_date
       /(?<tod>[0-9]*)_(?<tom>[A-Za-z]*)_(?<toy>[0-9]*)(?<rest>.*)/ =~ last_date
 
