@@ -40,13 +40,13 @@ place   = prompt.ask("Directory to store key:", default: '/tmp/%s' % name.gsub(/
 command = prompt.ask("command to execute on host:")
 comment = prompt.ask("comment for key:", default: '(%s)[%s]' % [name,command])
 
-EMPTY_PASSPHRASE = ''
-
 puts
-puts "creating directory"
 
+puts "creating directory"
 FileUtils.mkdir_p place
+
 puts "creating key"
+EMPTY_PASSPHRASE = ''
 system("ssh-keygen",
        "-t", "rsa",
        "-f", File.join(place, 'key'),
