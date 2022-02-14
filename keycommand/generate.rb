@@ -57,10 +57,14 @@ system("ssh-keygen",
 puts "creating authorized_keys line"
 public_key = File.read(File.join(place, "key.pub"))
 
-# TODO just use 'restrict' for newer ssh
+# older ssh server
+File.write(
+  File.join(place, "key.authorized_key_line_legacy"),
+  "command=\"%s\",no-port-forwarding,no-user-rc,no-X11-forwarding,no-agent-forwarding,no-pty %s" % [command, public_key])
+# just use 'restrict' for newer ssh server
 File.write(
   File.join(place, "key.authorized_key_line"),
-  "command=\"%s\",no-port-forwarding,no-user-rc,no-X11-forwarding,no-agent-forwarding,no-pty %s" % [command, public_key])
+  "command=\"%s\",restrict %s" % [command, public_key])
 
 puts "done"
 
