@@ -66,6 +66,11 @@ File.write(
   File.join(place, "key.authorized_key_line"),
   "command=\"%s\",restrict %s" % [command, public_key])
 
+puts " * Install the commandkeys ~/.ssh/authorized_keys - line"
+puts " * Use like"
+puts "    ssh -o \"IdentitiesOnly=yes\" -i %s user@host > command.response" % File.join(place, "key")
+
 puts "done"
+
 
 exit 0
